@@ -273,11 +273,12 @@ impl<'x, 'a: 'x> Env<'x, 'a> {
         }
     }
 
-    /// Get the value of a declaration, if that declaration has an associated value (only
-    /// definitions and theorems have values). Also returns the declaration's universe parameters.
-    pub fn get_declar_val(&self, n: &NamePtr<'a>) -> Option<(LevelsPtr<'a>, ExprPtr<'a>)> {
+    /// Get the value of a definition for delta reduction. Theorem declarations
+    /// also store values, but Lean treats theorem constants as opaque after
+    /// their bodies have been checked.
+    pub fn get_definition_val(&self, n: &NamePtr<'a>) -> Option<(LevelsPtr<'a>, ExprPtr<'a>)> {
         match self.get_declar(n)? {
-            Declar::Definition { info, val, .. } | Declar::Theorem { info, val, .. } => Some((info.uparams, *val)),
+            Declar::Definition { info, val, .. } => Some((info.uparams, *val)),
             _ => None,
         }
     }

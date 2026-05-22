@@ -1101,13 +1101,13 @@ impl<'x, 't: 'x, 'p: 't> TypeChecker<'x, 't, 'p> {
         Some(self.ctx.foldl_apps(appd, args.iter().copied().skip(rest_idx)))
     }
 
-    // We only need the name and reducibility from this.
+    // We only need the name and reducibility from this. Theorems are not
+    // definitions for reduction: Lean checks theorem bodies but treats theorem
+    // constants as opaque during definitional equality.
     fn get_applied_def(&mut self, e: ExprPtr<'t>) -> Option<(NamePtr<'t>, ReducibilityHint)> {
         if let Const { name, .. } = self.ctx.read_expr(self.ctx.unfold_apps_fun(e)) {
             if let Some(Declar::Definition { info, hint, .. }) = self.env.get_declar(&name) {
                 return Some((info.name, *hint))
-            } else if let Some(Declar::Theorem { info, .. }) = self.env.get_declar(&name) {
-                return Some((info.name, ReducibilityHint::Opaque))
             }
         }
         None
@@ -1125,7 +1125,7 @@ impl<'x, 't: 'x, 'p: 't> TypeChecker<'x, 't, 'p> {
     fn unfold_def(&mut self, e: ExprPtr<'t>) -> Option<ExprPtr<'t>> {
         let (fun, args) = self.ctx.unfold_apps(e);
         let (name, levels) = self.ctx.try_const_info(fun)?;
-        let (def_uparams, def_value) = self.env.get_declar_val(&name)?;
+        let (def_uparams, def_value) = self.env.get_definition_val(&name)?;
         if self.ctx.read_levels(levels).len() == self.ctx.read_levels(def_uparams).len() {
             let def_val = self.ctx.subst_expr_levels(def_value, def_uparams, levels);
             Some(self.ctx.foldl_apps(def_val, args.into_iter()))
